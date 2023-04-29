@@ -1,0 +1,22 @@
+# In minutes
+$snapshotFrequency = 60
+$sourceFolder = "C:\Users"
+$destinationFolder = "X:\SRV-BACKUP\Snapshot"
+$maxVersions = 14
+
+while ($true) {
+
+    $versionCount = (Get-ChildItem $destinationFolder | Measure-Object).Count
+    if ($versionCount -ge $maxVersions) {
+
+        $oldestVersion = Get-ChildItem $destinationFolder | Sort-Object CreationTime | Select-Object -First 1
+        Remove-Item $oldestVersion.FullName -Recurse -Force
+    }
+
+    $timestamp = (Get-Date).ToString("yyyy-MM-dd_HH-mm")
+    $destinationPath = Join-Path $destinationFolder ("Snapshot_" + $timestamp + "_" + ((Get-ChildItem $sourceFolder -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB).ToString("F2") + "MB")
+
+    robocopy $sourceFolder $destinationPath /MIR /MT /R:0 /W:0 /NFL /NDL /NP
+
+    Start-Sleep -Seconds ($snapshotFrequency * 60)
+}
